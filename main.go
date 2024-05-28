@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/PhantomHydrino/go-url-shortener/utils"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -14,7 +16,19 @@ func main() {
 		log.Println("Error is:", err)
 		return
 	}
-	// defer db.Close()
+	defer db.Close()
+
+	// Create a table
+	createTable := `
+        CREATE TABLE IF NOT EXISTS urls (
+            original_link TEXT,
+			short_id TEXT
+        )
+    `
+	if _, err = db.Exec(createTable); err != nil {
+		log.Println("Error creating table:", err)
+		return
+	}
 
 	// Create a new instance of the service
 	s := utils.NewService(db)

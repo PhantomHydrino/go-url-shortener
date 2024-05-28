@@ -63,13 +63,11 @@ func (svc *service) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dbinsert(queryURL, sUrl); err != nil {
+	if _, err := svc.db.Exec("INSERT INTO urls (original_link, short_id) VALUES (?, ?)", queryURL, sUrl); err != nil {
 		log.Println("Error:", err)
 		http.Error(w, "Error occurred while inserting into DB", http.StatusInternalServerError)
 		return
 	}
-
-	// defer db.close()
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
