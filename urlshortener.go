@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/teris-io/shortid"
@@ -74,15 +75,33 @@ func main() {
 
 	var inputurl string
 
-	fmt.Println("Please type a URL:")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Scan(&inputurl)
+		fmt.Fprintln(w, "Please type a URL:")
 
-	sUrl, err := shortenurl(inputurl)
+		queryURL := r.URL.Query().Get("url")
 
-	if err != nil {
-		log.Println("Error is:", err)
-	}
+		if queryURL == "" {
+			fmt.Fprintln(w, "No URL provided.")
+			return
+		}
 
-	log.Printf("\nShortened URL is: %s\n", sUrl)
+		sUrl, err := shortenurl(inputurl)
+
+		if err != nil {
+			log.Println("Error is:", err)
+		}
+
+		err = dbinsert(queryURL, sUrl) // Pass queryURL to dbinsert
+		if err != nil {
+			log.Println("Error:", err)
+			http.Error(w, "Error occurred while inserting into DB", http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintf(w, "\nShortened URL is: %s\n", sUrl)
+
+	})
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
