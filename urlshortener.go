@@ -69,9 +69,3 @@ func ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-func main() {
-	http.HandleFunc("/", ShortenURLHandler)
-
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
