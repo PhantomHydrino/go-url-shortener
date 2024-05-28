@@ -1,4 +1,4 @@
-module urlshortenersamtest
+module github.com/PhantomHydrino/go-url-shortener
 
 go 1.22.3
 
