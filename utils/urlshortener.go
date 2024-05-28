@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"encoding/json"
 	"log"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/teris-io/shortid"
 )
+
+type service struct {
+	db *sql.DB
+}
 
 func idgen() (string, error) {
 	sid, err := shortid.New(1, shortid.DefaultABC, 2342)
@@ -40,7 +45,11 @@ func dbinsert(originalurl, generatedid string) error {
 	return w.Error()
 }
 
-func ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
+func NewService(db *sql.DB) *service {
+	return &service{db: db}
+}
+
+func (svc *service) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	queryURL := r.URL.Query().Get("url")
 	if queryURL == "" {
 		http.Error(w, "No URL provided.", http.StatusBadRequest)
@@ -59,6 +68,8 @@ func ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error occurred while inserting into DB", http.StatusInternalServerError)
 		return
 	}
+
+	// defer db.close()
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
