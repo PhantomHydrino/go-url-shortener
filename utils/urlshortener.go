@@ -2,11 +2,9 @@ package utils
 
 import (
 	"database/sql"
-	"encoding/csv"
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/teris-io/shortid"
 )
@@ -29,21 +27,23 @@ func idgen() (string, error) {
 	return id, err
 }
 
-func dbinsert(originalurl, generatedid string) error {
-	file, err := os.OpenFile("dummydb.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
+// func dbinsert(originalurl, generatedid string) error {
+// 	file, err := os.OpenFile("dummydb.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	w := csv.NewWriter(file)
-	if err := w.Write([]string{generatedid, originalurl}); err != nil {
-		return err
-	}
+// 	w := csv.NewWriter(file)
+// 	if err := w.Write([]string{generatedid, originalurl}); err != nil {
+// 		return err
+// 	}
 
-	w.Flush()
+// 	w.Flush()
 
-	return w.Error()
-}
+// 	return w.Error()
+// }
+
+
 
 func NewService(db *sql.DB) *service {
 	return &service{db: db}
@@ -77,4 +77,25 @@ func (svc *service) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error occurred while encoding JSON", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (svc *service) RedirectHandler(w http.ResponseWriter, r *http.Request) {
+    shortID := r.URL.Query().Get("short_id") //gets short_id param from retrieve?short_id
+    if shortID == "" {
+        http.Error(w, "No short ID provided.", http.StatusBadRequest) //when no short_id is provided
+        return
+    }
+
+    var originalURL string // variable to store original URl
+    // line to search the row and get orignal_link from the "urls" table by passing short_id 
+	// as a query and then scan the original_url and assings it to originalURL 
+	err := svc.db.QueryRow("SELECT original_link FROM urls WHERE short_id = ?", shortID).Scan(&originalURL) 
+    if err != nil {
+        log.Println("Error:", err)
+        http.Error(w, "Error occurred while retrieving original URL", http.StatusInternalServerError) //send error if nothing is found
+        return
+    }
+
+	//this line redirects to the originalURL
+    http.Redirect(w, r, originalURL, http.StatusFound)
 }

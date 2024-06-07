@@ -34,6 +34,7 @@ func main() {
 	s := utils.NewService(db)
 
 	http.HandleFunc("/", s.ShortenURLHandler)
+	http.HandleFunc("/retrieve",s.RedirectHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
