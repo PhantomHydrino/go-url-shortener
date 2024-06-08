@@ -22,7 +22,7 @@ func main() {
 	createTable := `
         CREATE TABLE IF NOT EXISTS urls (
             original_link TEXT,
-			short_id TEXT
+			short_id TEXT primary key
         )
     `
 	if _, err = db.Exec(createTable); err != nil {
@@ -33,8 +33,15 @@ func main() {
 	// Create a new instance of the service
 	s := utils.NewService(db)
 
-	http.HandleFunc("/", s.ShortenURLHandler)
-	http.HandleFunc("/retrieve",s.RedirectHandler)
+	http.HandleFunc("/new",s.ShortenURLHandler)
+	http.HandleFunc("/",s.RedirectHandler)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	addr := ":8080"
+	server:=http.Server{
+		Addr:addr,
+		Handler: http.DefaultServeMux,
+	}
+
+	log.Println("Listening On:", addr)
+	log.Fatal(server.ListenAndServe())
 }
