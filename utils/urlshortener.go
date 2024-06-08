@@ -80,22 +80,25 @@ func (svc *service) ShortenURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *service) RedirectHandler(w http.ResponseWriter, r *http.Request) {
-    shortID := r.URL.Query().Get("short_id") //gets short_id param from retrieve?short_id
+    shortID := r.URL.Path[1:] //gets short_id param from retrieve?short_id
     if shortID == "" {
-        http.Error(w, "No short ID provided.", http.StatusBadRequest) //when no short_id is provided
+        http.Error(w, "Invalid URL.", http.StatusBadRequest) //when no short_id is provided
         return
     }
 
     var originalURL string // variable to store original URl
     // line to search the row and get orignal_link from the "urls" table by passing short_id 
 	// as a query and then scan the original_url and assings it to originalURL 
-	err := svc.db.QueryRow("SELECT original_link FROM urls WHERE short_id = ?", shortID).Scan(&originalURL) 
-    if err != nil {
+	err := svc.db.QueryRow("SELECT original_link FROM urls WHERE short_id = ?", shortID).Scan(&originalURL)
+	if err == sql.ErrNoRows {
+		http.Error(w, "URL not found", http.StatusNotFound) // return 404 if shortID is not found
+		return
+	} else if err != nil {
         log.Println("Error:", err)
         http.Error(w, "Error occurred while retrieving original URL", http.StatusInternalServerError) //send error if nothing is found
         return
     }
 
 	//this line redirects to the originalURL
-    http.Redirect(w, r, originalURL, http.StatusFound)
+    http.Redirect(w, r, originalURL, http.StatusPermanentRedirect)
 }
